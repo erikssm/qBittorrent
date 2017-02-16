@@ -313,6 +313,7 @@ QVariant TorrentModel::getTooltip(const QModelIndex& idx, const BitTorrent::Torr
     switch (idx.column()) {
     case TorrentModel::TR_NAME:
         textw += pWdiget->style()->pixelMetric(QStyle::PM_ListViewIconSize) + fontmetrics.width(" "); // icon width + margin
+        // fall through
     case TorrentModel::TR_SAVE_PATH:
     case TorrentModel::TR_TRACKER:
         text = idx.data();
