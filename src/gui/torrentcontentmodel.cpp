@@ -297,6 +297,8 @@ void TorrentContentModel::setupModelData(const BitTorrent::TorrentInfo &info)
     qDebug("Torrent contains %d files", filesCount);
     m_filesIndex.reserve(filesCount);
 
+    using SortListEntry = QPair<QString, TorrentContentModelFile*>;
+    QVector<SortListEntry> prioritySortList;
     TorrentContentModelFolder* currentParent;
     // Iterate over files
     for (int i = 0; i < filesCount; ++i) {
@@ -319,8 +321,31 @@ void TorrentContentModel::setupModelData(const BitTorrent::TorrentInfo &info)
         TorrentContentModelFile* fileItem = new TorrentContentModelFile(info.fileName(i), info.fileSize(i), currentParent, i);
         currentParent->appendChild(fileItem);
         m_filesIndex.push_back(fileItem);
+
+        // increase priority of the first files in the list
+        if (TorrentContentModelItem::FileType != fileItem->itemType())
+            continue;
+        else if (fileItem->size() < 1024*1024*50) // skip small files
+            continue;
+
+        prioritySortList.append({path,fileItem});
     }
     emit layoutChanged();
+
+    // increase priorities for the first files in the list
+    auto sortfn=[](const SortListEntry& e1, const SortListEntry& e2){
+        return e1.first < e2.first;
+    };
+    qSort(prioritySortList.begin(), prioritySortList.end(), sortfn);
+
+    for (int i = 0; i < prioritySortList.size(); ++i) {
+        if (i < 2)
+            prioritySortList[i].second->setPriority(prio::MAXIMUM);
+        else if (i < 4)
+            prioritySortList[i].second->setPriority(prio::HIGH);
+        else
+            break;
+    }
 }
 
 void TorrentContentModel::selectAll()
